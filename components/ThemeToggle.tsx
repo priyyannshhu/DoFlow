@@ -26,30 +26,35 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="rounded-full">
-        <Sun className="h-5 w-5" />
+      <Button variant="ghost" size="icon" className="rounded-full hover:bg-neutral-800 text-neutral-300">
+        <Moon className="h-5 w-5" />
       </Button>
     );
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={toggleTheme}
-      className="rounded-full hover:bg-secondary"
+    <motion.div
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
     >
-      <motion.div
-        initial={false}
-        animate={{ rotate: theme === 'dark' ? 180 : 0 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleTheme}
+        className="rounded-full hover:bg-neutral-800 bg-neutral-900/50 border border-neutral-800 text-neutral-300 hover:text-white transition-colors"
       >
-        {theme === 'light' ? (
-          <Sun className="h-5 w-5" />
-        ) : (
-          <Moon className="h-5 w-5" />
-        )}
-      </motion.div>
-    </Button>
+        <motion.div
+          initial={false}
+          animate={{ rotate: theme === 'dark' ? 360 : 0 }}
+          transition={{ duration: 0.5, ease: 'easeInOut' }}
+        >
+          {theme === 'light' ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
+        </motion.div>
+      </Button>
+    </motion.div>
   );
 }

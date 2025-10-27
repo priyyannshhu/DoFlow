@@ -8,33 +8,37 @@ import { Input } from '@/components/ui/input';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { TaskCard } from '@/components/TaskCard';
 import { Footer } from '@/components/Footer';
-import { getFromLocalStorage, saveToLocalStorage } from '@/lib/localStorage';
-import { getRandomQuote } from '@/lib/quotes';
-
-interface Task {
-  id: string;
-  text: string;
-  completed: boolean;
-}
+import { BackgroundBeamsWrapper } from '@/components/BackgroundBeamsWrapper';
+import { DateSelector } from '@/components/DateSelector';
+import { ProgressIndicator } from '@/components/ProgressIndicator';
+import { QuoteBanner } from '@/components/QuoteBanner';
+import { Task, formatDate, getTasksForDate, saveTasksForDate } from '@/lib/storage';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [quote, setQuote] = useState('');
+  const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
 
   useEffect(() => {
     setMounted(true);
-    const savedTasks = getFromLocalStorage<Task[]>('tasks', []);
+    const todayDate = formatDate(new Date());
+    setSelectedDate(todayDate);
+    const savedTasks = getTasksForDate(todayDate);
     setTasks(savedTasks);
-    setQuote(getRandomQuote());
   }, []);
 
   useEffect(() => {
     if (mounted) {
-      saveToLocalStorage('tasks', tasks);
+      saveTasksForDate(selectedDate, tasks);
     }
-  }, [tasks, mounted]);
+  }, [tasks, mounted, selectedDate]);
+
+  const handleDateChange = (newDate: string) => {
+    setSelectedDate(newDate);
+    const tasksForDate = getTasksForDate(newDate);
+    setTasks(tasksForDate);
+  };
 
   const addTask = () => {
     if (newTask.trim() === '') return;
@@ -52,7 +56,19 @@ export default function Home() {
   const toggleTask = (id: string) => {
     setTasks(
       tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
+        task.id === id
+          ? {
+              ...task,
+              completed: !task.completed,
+              completedAt: !task.completed
+                ? new Date().toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })
+                : undefined,
+            }
+          : task
       )
     );
   };
@@ -71,16 +87,18 @@ export default function Home() {
     return null;
   }
 
+  const completedCount = tasks.filter((t) => t.completed).length;
+
   return (
-    <div className="min-h-screen bg-background flex flex-col px-4 py-8 transition-colors duration-300">
-      <div className="max-w-3xl w-full mx-auto flex-1 flex flex-col">
-        <header className="flex justify-between items-center mb-8">
+    <BackgroundBeamsWrapper>
+      <div className="flex flex-col min-h-screen">
+        <header className="flex justify-between items-center mb-6">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground">
+            <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-500">
               DoFlow
             </h1>
           </motion.div>
@@ -93,39 +111,38 @@ export default function Home() {
           </motion.div>
         </header>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-8"
-        >
-          <p className="text-sm md:text-base text-muted-foreground italic text-center">
-            "{quote}"
-          </p>
-        </motion.div>
+        <QuoteBanner />
+
+        <DateSelector selectedDate={selectedDate} onDateChange={handleDateChange} />
+
+        {tasks.length > 0 && (
+          <ProgressIndicator total={tasks.length} completed={completedCount} />
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mb-8"
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="my-6"
         >
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="Add a new task..."
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="flex-1 h-12 rounded-2xl border-2 focus-visible:ring-2 focus-visible:ring-primary px-4 text-base"
-            />
-            <Button
-              onClick={addTask}
-              size="icon"
-              className="h-12 w-12 rounded-2xl bg-primary hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-5 w-5" />
-            </Button>
+          <div className="p-4 rounded-2xl bg-white/5 dark:bg-white/5 backdrop-blur-lg border border-neutral-800">
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Add a new task..."
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="flex-1 h-12 rounded-xl border-neutral-800 bg-neutral-900/50 text-neutral-100 placeholder:text-neutral-500 focus-visible:ring-2 focus-visible:ring-indigo-500 px-4 text-base"
+              />
+              <Button
+                onClick={addTask}
+                size="icon"
+                className="h-12 w-12 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 transition-all shadow-lg hover:shadow-indigo-500/50"
+              >
+                <Plus className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </motion.div>
 
@@ -138,10 +155,10 @@ export default function Home() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.3 }}
-                className="flex flex-col items-center justify-center py-16"
+                className="flex flex-col items-center justify-center py-16 rounded-2xl bg-neutral-900/30 backdrop-blur-sm border border-neutral-800"
               >
-                <CheckCircle2 className="h-20 w-20 text-muted-foreground/30 mb-4" />
-                <p className="text-lg text-muted-foreground">
+                <CheckCircle2 className="h-20 w-20 text-neutral-700 mb-4" />
+                <p className="text-lg text-neutral-400">
                   No tasks yet. Add one to get started!
                 </p>
               </motion.div>
@@ -153,6 +170,7 @@ export default function Home() {
                     id={task.id}
                     text={task.text}
                     completed={task.completed}
+                    completedAt={task.completedAt}
                     onToggle={toggleTask}
                     onDelete={deleteTask}
                     index={index}
@@ -165,6 +183,6 @@ export default function Home() {
 
         <Footer />
       </div>
-    </div>
+    </BackgroundBeamsWrapper>
   );
 }

@@ -7,7 +7,7 @@ export function Footer() {
         href="https://priyanshu-v.vercel.app/"
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sm text-muted-foreground hover:text-foreground transition-all duration-200 hover:opacity-70"
+        className="text-sm text-neutral-500 hover:text-indigo-400 transition-all duration-200"
       >
         Made by Priyanshu
       </a>
